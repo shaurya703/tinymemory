@@ -150,13 +150,14 @@ fn build_rules() -> Vec<Rule> {
             None,
         ),
         // International phone number: `+` and 7–15 digits, with at most one
-        // space or hyphen between any two digits. The trailing boundary
-        // refuses a 15-digit prefix of a longer run of digits, so an overlong
-        // value is left alone rather than matched on its head, and the
-        // validator pins the digit count the pattern promises.
+        // space or hyphen between any two digits. The pattern has no upper
+        // bound on purpose: it consumes the whole digit-and-separator run, and
+        // the validator then rejects any run outside 7–15 digits, so an
+        // overlong value is left alone rather than matched on a 15-digit head
+        // that happens to end at a separator.
         pattern_rule(
             PiiCategory::PhoneNumber,
-            r"\+\d(?:[\s\-]?\d){6,14}\b",
+            r"\+\d(?:[ -]?\d){6,}\b",
             Some(has_international_phone_digit_count),
         ),
         // IPv4 address (octet-validated).

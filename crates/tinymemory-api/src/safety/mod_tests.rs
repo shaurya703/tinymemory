@@ -105,6 +105,34 @@ fn an_overlong_number_is_not_matched_on_a_prefix() {
 }
 
 #[test]
+fn an_overlong_separated_number_is_not_matched_on_a_prefix() {
+    // 16 digits with a separator after the fifteenth: the rule must consume
+    // the whole run and reject it, not stop at the separator and accept the
+    // 15-digit head.
+    for text in [
+        "ref +123456789012345-6 end",
+        "ref +123456789012345 6 end",
+        "ref +1-234-567-890-123-456 end",
+    ] {
+        assert_eq!(scan(text).level, RiskLevel::None, "flagged {text:?}");
+        assert_eq!(redact_identifiers(text), text);
+    }
+}
+
+#[test]
+fn international_phone_separators_do_not_span_lines_or_tabs() {
+    // Only a space or a hyphen joins two digit groups. A newline or a tab
+    // ends the candidate, so two short runs on separate lines are not glued
+    // into one phone number.
+    for text in ["+1234\n567", "+1234\t567", "+123 456\n789 012"] {
+        assert!(
+            !scan(text).has_category(PiiCategory::PhoneNumber),
+            "flagged {text:?}"
+        );
+    }
+}
+
+#[test]
 fn international_phone_redaction_covers_the_whole_number() {
     assert_eq!(
         redact_identifiers("call +44 20 7946 0958 now"),
